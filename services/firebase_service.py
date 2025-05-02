@@ -1,12 +1,16 @@
 import firebase_admin
 from firebase_admin import credentials, firestore
+import os
+import json
 
+# Leer las credenciales desde una variable de entorno segura
 if not firebase_admin._apps:
-    cred = credentials.Certificate("firebase-adminsdk.json")
+    cred_data = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+    cred_dict = json.loads(cred_data)
+    cred = credentials.Certificate(cred_dict)
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
-
 
 def obtener_menus():
     try:
