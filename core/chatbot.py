@@ -7,15 +7,15 @@ def responder(mensaje):
     mensaje = mensaje.lower()
 
     # Saludo inteligente
-    if mensaje in ["hola", "buenas", "buenos días", "hey"]:
+    if any(frase in mensaje for frase in ["hola", "buenas", "buenos días", "buenas tardes", "hey"]):
         return "👋 ¡Hola! Bienvenido a Bembos. ¿Deseas ver nuestros menús o hacer un pedido?"
 
-    # Detectar intención de menú (flexible)
-    if "menú" in mensaje or "menu" in mensaje or "combos" in mensaje or "lo que venden" in mensaje or "quiero ver" in mensaje:
+    # Intención: mostrar menús
+    if any(frase in mensaje for frase in ["menú", "menu", "combos", "lo que venden", "quiero ver", "mostrar", "catálogo", "ver opciones"]):
         try:
             menus = obtener_menus()
-            if menus and isinstance(menus, list):
-                respuesta = "🍔 Aquí tienes nuestros combos:\n"
+            if menus and isinstance(menus, list) and len(menus) > 0:
+                respuesta = "🍔 Estos son nuestros combos disponibles:\n"
                 for item in menus:
                     nombre = item.get("nombre", "Combo sin nombre")
                     precio = item.get("precio", "Precio no disponible")
@@ -24,32 +24,33 @@ def responder(mensaje):
                 return respuesta
             else:
                 enviar_pdf_catalogo()
-                return "No encontré los menús en Firebase, te estoy enviando el catálogo en PDF 📄."
+                return "❗ No encontré los menús en Firebase, pero te estoy enviando el catálogo en PDF. 📄"
         except Exception as e:
-            print(f"[ERROR] No se pudieron obtener los menús: {e}")
+            print(f"[ERROR] Menús no disponibles: {e}")
             enviar_pdf_catalogo()
-            return "📄 Te estoy enviando el catálogo en PDF por si acaso hubo un error al cargar los menús."
+            return "⚠️ Hubo un error al obtener los menús. Te estoy enviando el catálogo en PDF. 📄"
 
-    # Detectar intención de delivery
+    # Intención: delivery
     if "delivery" in mensaje:
         match = re.search(r"delivery (?:a |en )?(\w+(?: \w+)*)", mensaje)
         if match:
             distrito = match.group(1)
             precio = calcular_delivery_con_ia(distrito)
             if precio:
-                return f"📦 El delivery a {distrito.title()} cuesta aproximadamente {precio}. ¿Deseas confirmar tu pedido?"
-            return "No pude calcular el costo del delivery en este momento. 🤖"
-        return "¿A qué distrito deseas el delivery? 😊"
+                return f"🚚 El delivery a *{distrito.title()}* cuesta aproximadamente {precio}. ¿Deseas confirmar tu pedido?"
+            else:
+                return "❌ No pude calcular el costo del delivery por ahora. Intenta nuevamente en unos minutos."
+        return "📍 ¿A qué distrito deseas el delivery?"
 
-    # Detectar intención de reserva
-    match = re.search(r"reservar|comer.*a las (\d{1,2})", mensaje)
+    # Intención: reserva
+    match = re.search(r"(?:reservar|comer).*a las (\d{1,2})", mensaje)
     if match:
         hora = match.group(1)
-        return f"👌 Se ha generado tu reserva para las {hora}:00 hrs en nuestra tienda. ¿Para cuántas personas será?"
+        return f"📅 ¡Listo! Tu reserva ha sido generada para las {hora}:00 hrs. ¿Para cuántas personas será?"
 
-    # Fallback → usar IA de Gemini
+    # Fallback → IA Gemini
     ia_respuesta = responder_con_gemini(mensaje)
     if ia_respuesta:
-        return f"{ia_respuesta} 🤖 (respuesta generada por IA)"
+        return f"{ia_respuesta} 🤖"
 
     return "❌ Lo siento, aún no estoy entrenado para responder eso."
